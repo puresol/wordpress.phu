@@ -510,3 +510,177 @@ require get_template_directory() . '/inc/customizer.php';
 if ( ! class_exists( 'Featured_Content' ) && 'plugins.php' !== $GLOBALS['pagenow'] ) {
 	require get_template_directory() . '/inc/featured-content.php';
 }
+
+function tao_taxonomy() {
+ 
+        /* Biến $label chứa các tham số thiết lập tên hiển thị của Taxonomy
+         */
+        $labels = array(
+                'name' => 'Các loại sản phẩm',
+                'singular' => 'Loại sản phẩm',
+                'menu_name' => 'Loại sản phẩm'
+        );
+ 
+        /* Biến $args khai báo các tham số trong custom taxonomy cần tạo
+         */
+        $args = array(
+                'labels'                     => $labels,
+                'hierarchical'               => false,
+                'public'                     => true,
+                'show_ui'                    => true,
+                'show_admin_column'          => true,
+                'show_in_nav_menus'          => true,
+                'show_tagcloud'              => true,
+        );
+ 
+        /* Hàm register_taxonomy để khởi tạo taxonomy
+         */
+        register_taxonomy('loai-san-pham', 'post', $args);
+ 
+}
+ 
+// Hook into the 'init' action
+add_action( 'init', 'tao_taxonomy', 0 );
+
+function tao_custom_post_type()
+{
+ 
+    /*
+     * Biến $label để chứa các text liên quan đến tên hiển thị của Post Type trong Admin
+     */
+    $label = array(
+        'name' => 'Chúng tôi', //Tên post type dạng số nhiều
+        'singular_name' => 'Chúng tôi' //Tên post type dạng số ít
+    );
+ 
+    /*
+     * Biến $args là những tham số quan trọng trong Post Type
+     */
+    $args = array(
+        'labels' => $label, //Gọi các label trong biến $label ở trên
+        'description' => 'Thêm thông tin nhân viên', //Mô tả của post type
+        'supports' => array(
+            'title',
+            'editor',
+            'excerpt',
+            'author',
+            'thumbnail',
+            'comments',
+            'trackbacks',
+            'revisions',
+            'custom-fields'
+        ), //Các tính năng được hỗ trợ trong post type
+        'taxonomies' => array( 'category', 'post_tag' ), //Các taxonomy được phép sử dụng để phân loại nội dung
+        'hierarchical' => false, //Cho phép phân cấp, nếu là false thì post type này giống như Post, false thì giống như Page
+        'public' => true, //Kích hoạt post type
+        'show_ui' => true, //Hiển thị khung quản trị như Post/Page
+        'show_in_menu' => true, //Hiển thị trên Admin Menu (tay trái)
+        'show_in_nav_menus' => true, //Hiển thị trong Appearance -> Menus
+        'show_in_admin_bar' => true, //Hiển thị trên thanh Admin bar màu đen.
+        'menu_position' => 5, //Thứ tự vị trí hiển thị trong menu (tay trái)
+        'menu_icon' => 'images/people.png', //Đường dẫn tới icon sẽ hiển thị
+        'can_export' => true, //Có thể export nội dung bằng Tools -> Export
+        'has_archive' => true, //Cho phép lưu trữ (month, date, year)
+        'exclude_from_search' => false, //Loại bỏ khỏi kết quả tìm kiếm
+        'publicly_queryable' => true, //Hiển thị các tham số trong query, phải đặt true
+        'capability_type' => 'post' //
+    );
+ 
+    register_post_type('chungtoi', $args); //Tạo post type với slug tên là sanpham và các tham số trong biến $args ở trên
+ 
+}
+/* Kích hoạt hàm tạo custom post type */
+add_action('init', 'tao_custom_post_type');
+
+
+
+
+add_action('init', 'portfolio_register');
+ 
+function portfolio_register() {
+ 
+	$labels = array(
+		'name' => _x('My Staff', 'post type general name'),
+		'singular_name' => _x('my-staff', 'post type singular name'),
+		'add_new' => _x('Add New', 'portfolio item'),
+		'add_new_item' => __('Add New Staff'),
+		'edit_item' => __('Edit Staff'),
+		'new_item' => __('New Staff'),
+		'view_item' => __('View Staff'),
+		'search_items' => __('Search Staff'),
+		'not_found' =>  __('Nothing found'),
+		'not_found_in_trash' => __('Nothing found in Trash'),
+		'parent_item_colon' => ''
+	);
+ 
+	$args = array(
+		'labels' => $labels,
+		'public' => true,
+		'publicly_queryable' => true,
+		'show_ui' => true,
+		'query_var' => true,
+		'menu_icon' => get_stylesheet_directory_uri() . '/article16.png',
+		'rewrite' => true,
+		'capability_type' => 'post',
+		'hierarchical' => false,
+		'menu_position' => null,
+		'supports' => array('thumbnail')
+	  ); 
+ 
+	register_post_type( 'portfolio' , $args );
+}
+register_taxonomy("Position", array("portfolio"), array("hierarchical" => true, "label" => "Positions", "singular_label" => "position", "rewrite" => true));
+
+
+add_action("admin_init", "admin_init");
+ 
+function admin_init(){
+  add_meta_box("credits_meta", "Tiểu sử", "credits_meta", "portfolio", "normal", "low");
+}
+
+function credits_meta() {
+  global $post;
+  $custom = get_post_custom($post->ID);
+  $tieusu = $custom["tieusu"][0];
+  $staffname = $custom["staffname"][0];
+  ?>
+		<p><label>Họ tên:</label><br />
+  <input type="text" name="staffname" value="<?php echo $staffname ;?>"></p>
+ <p><label>Tiểu sử:</label><br />
+  <textarea cols="50" rows="5" name="tieusu"><?php echo $tieusu; ?></textarea></p>
+  <?php
+}
+
+add_action('save_post', 'save_details');
+function save_details(){
+  global $post;
+  update_post_meta($post->ID, "staffname", $_POST["staffname"]);
+  update_post_meta($post->ID, "tieusu", $_POST["tieusu"]);
+}
+
+add_action("manage_posts_custom_column",  "portfolio_custom_columns");
+add_filter("manage_edit-portfolio_columns", "portfolio_edit_columns");
+ 
+function portfolio_edit_columns($columns){
+  $columns = array(
+    "cb" => "<input type='checkbox' />",
+    "name" => "Staff Name",
+    "description" => "Tiểu sử",
+  );
+ 
+  return $columns;
+}
+function portfolio_custom_columns($column){
+  global $post;
+ 
+  switch ($column) {
+  	case "name":
+      $custom = get_post_custom();
+      echo $custom["staffname"][0];
+      break;
+    case "description":
+      $custom = get_post_custom();
+      echo $custom["tieusu"][0];
+      break;
+  }
+}
